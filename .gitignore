@@ -1,0 +1,845 @@
+전체 코드를 그대로 보여드릴게요 (`index.html` 한 파일).
+
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>의사결정 나침반</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3EEE2;
+    --surface:#FFFFFF;
+    --surface-dim:#FAF6EC;
+    --ink:#2B2A28;
+    --ink-soft:#7A7568;
+    --navy:#1B2A4A;
+    --gold:#C49A45;
+    --teal:#3F7873;
+    --rust:#B0563B;
+    --line:#E3DCC9;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{font-family:'Fraunces',serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  button{font-family:inherit;cursor:pointer;}
+  input,textarea,select{font-family:inherit;}
+  a{color:inherit;}
+
+  /* ---------- layout shells ---------- */
+  #app{min-height:100vh;display:flex;flex-direction:column;}
+
+  .auth-wrap{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(circle at 18% 24%, rgba(196,154,69,0.14), transparent 42%),
+      radial-gradient(circle at 82% 78%, rgba(63,120,115,0.14), transparent 45%),
+      var(--bg);
+    padding:24px;
+  }
+  .auth-card{
+    width:100%;max-width:380px;background:var(--surface);
+    border:1px solid var(--line);border-radius:14px;
+    padding:36px 32px;box-shadow:0 18px 40px -22px rgba(27,42,74,0.35);
+  }
+  .auth-brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+  .auth-brand h1{font-size:21px;margin:0;font-weight:600;letter-spacing:0.2px;}
+  .auth-sub{color:var(--ink-soft);font-size:13.5px;margin:0 0 26px;line-height:1.6;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;letter-spacing:0.2px;}
+  .field input, .field textarea, .field select{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+    background:var(--surface-dim);font-size:14px;color:var(--ink);
+  }
+  .field input:focus, .field textarea:focus, .field select:focus{
+    outline:none;border-color:var(--navy);background:var(--surface);
+  }
+  .btn{
+    border:none;border-radius:8px;padding:11px 18px;font-size:14px;font-weight:600;
+    transition:transform .12s ease, opacity .12s ease;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn-primary{background:var(--navy);color:#fff;}
+  .btn-primary:hover{opacity:0.9;}
+  .btn-gold{background:var(--gold);color:#2B2A28;}
+  .btn-gold:hover{opacity:0.9;}
+  .btn-ghost{background:transparent;color:var(--navy);border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--navy);}
+  .btn-danger{background:transparent;color:var(--rust);border:1px solid var(--rust);}
+  .btn-block{width:100%;}
+  .btn-sm{padding:7px 12px;font-size:12.5px;border-radius:7px;}
+  .link-btn{background:none;border:none;color:var(--navy);text-decoration:underline;font-size:13px;padding:0;}
+  .auth-error{color:var(--rust);font-size:12.5px;margin:-6px 0 14px;}
+
+  /* ---------- header / shell ---------- */
+  .topbar{
+    background:var(--navy);color:#EFE9DA;padding:14px 28px;
+    display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:10;
+  }
+  .topbar .brand{display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .topbar .brand h1{font-size:17px;margin:0;font-weight:600;color:#fff;}
+  .topbar .actions{display:flex;align-items:center;gap:14px;}
+  .topbar .user-tag{font-size:12.5px;color:#C9C2AE;}
+  .topbar .actions button{font-size:12.5px;}
+
+  main{flex:1;width:100%;max-width:880px;margin:0 auto;padding:32px 24px 64px;}
+
+  /* compass mark used in brand + signature */
+  .compass-mark{width:26px;height:26px;flex-shrink:0;}
+
+  /* ---------- list page ---------- */
+  .list-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
+  .list-header h2{font-size:24px;margin:0;}
+  .list-header p{color:var(--ink-soft);font-size:13.5px;margin:4px 0 0;}
+  .worry-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(260px,1fr));gap:14px;}
+  .worry-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:18px 18px 16px;display:flex;flex-direction:column;gap:10px;
+  }
+  .worry-card .cat-pill{
+    align-self:flex-start;font-size:11px;color:var(--navy);background:var(--surface-dim);
+    border:1px solid var(--line);padding:3px 9px;border-radius:99px;
+  }
+  .worry-card h3{font-size:16.5px;margin:0;line-height:1.4;}
+  .worry-card .meta{font-size:11.5px;color:var(--ink-soft);}
+  .worry-card .grade-row{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;border-top:1px dashed var(--line);}
+  .badge{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:99px;}
+  .badge-recommend{background:rgba(63,120,115,0.14);color:var(--teal);}
+  .badge-caution{background:rgba(196,154,69,0.18);color:#8a6a23;}
+  .badge-reconsider{background:rgba(176,86,59,0.14);color:var(--rust);}
+  .badge-draft{background:var(--surface-dim);color:var(--ink-soft);border:1px solid var(--line);}
+  .worry-card .card-actions{display:flex;gap:6px;}
+  .empty-state{
+    border:1px dashed var(--line);border-radius:12px;padding:48px 24px;text-align:center;color:var(--ink-soft);
+  }
+  .empty-state h3{color:var(--ink);margin:10px 0 6px;font-size:17px;}
+
+  /* ---------- wizard ---------- */
+  .step-track{display:flex;align-items:center;margin-bottom:30px;flex-wrap:wrap;gap:0;}
+  .step-dot-wrap{display:flex;align-items:center;}
+  .step-dot{
+    width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:11.5px;font-weight:600;flex-shrink:0;font-family:'IBM Plex Mono',monospace;
+    border:1.5px solid var(--line);color:var(--ink-soft);background:var(--surface);
+  }
+  .step-dot.done{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .step-dot.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .step-connector{width:18px;height:1.5px;background:var(--line);margin:0 2px;}
+  .step-label{font-size:9.5px;color:var(--ink-soft);position:relative;top:18px;display:none;}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 26px;}
+  .panel h2{font-size:19px;margin:0 0 4px;}
+  .panel .panel-sub{color:var(--ink-soft);font-size:13px;margin:0 0 22px;line-height:1.6;}
+
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+  .chip{
+    padding:8px 16px;border-radius:99px;border:1px solid var(--line);background:var(--surface-dim);
+    font-size:13px;color:var(--ink);transition:all .12s ease;
+  }
+  .chip.selected{background:var(--navy);border-color:var(--navy);color:#fff;}
+
+  .item-block{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;background:var(--surface-dim);}
+  .item-block .item-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;}
+  .item-block .item-head input.item-name{
+    border:none;background:transparent;font-weight:600;font-size:14px;padding:2px 0;width:100%;
+  }
+  .item-block .item-head input.item-name:focus{outline:none;border-bottom:1px solid var(--navy);}
+  .item-block textarea{
+    width:100%;min-height:58px;border:1px solid var(--line);border-radius:7px;padding:9px 10px;
+    font-size:13.5px;background:var(--surface);resize:vertical;
+  }
+  .remove-x{background:none;border:none;color:var(--ink-soft);font-size:16px;line-height:1;padding:2px 6px;}
+  .remove-x:hover{color:var(--rust);}
+
+  .pc-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media (max-width:640px){.pc-cols{grid-template-columns:1fr;}}
+  .pc-col h3{font-size:14px;margin:0 0 10px;display:flex;align-items:center;gap:6px;}
+  .pc-col.pros h3{color:var(--teal);}
+  .pc-col.cons h3{color:var(--rust);}
+  .pc-item{
+    border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:8px;background:var(--surface-dim);
+  }
+  .pc-item .pc-row{display:flex;gap:8px;align-items:flex-start;}
+  .pc-item input.pc-text{
+    flex:1;border:none;background:transparent;font-size:13.5px;padding:4px 0;
+  }
+  .pc-item input.pc-text:focus{outline:none;}
+  .add-row{display:flex;gap:8px;margin-top:4px;}
+  .add-row input{flex:1;}
+
+  .slider-row{margin-bottom:16px;}
+  .slider-row .sr-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .slider-row .sr-label{font-size:13px;color:var(--ink);}
+  .slider-row .sr-val{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--navy);font-weight:600;}
+  .slider-row input[type=range]{width:100%;accent-color:var(--navy);}
+  .eval-group{border-top:1px dashed var(--line);padding-top:16px;margin-top:16px;}
+  .eval-group:first-child{border-top:none;padding-top:0;margin-top:0;}
+  .eval-group-title{font-size:12px;text-transform:uppercase;letter-spacing:0.6px;color:var(--ink-soft);margin-bottom:12px;}
+
+  .score-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:18px;}
+  .score-table th{text-align:left;font-weight:600;color:var(--ink-soft);font-size:11.5px;text-transform:uppercase;letter-spacing:0.4px;padding:6px 8px;border-bottom:1px solid var(--line);}
+  .score-table td{padding:8px 8px;border-bottom:1px solid var(--line);}
+  .score-table tr:last-child td{border-bottom:none;}
+  .score-table .num{font-family:'IBM Plex Mono',monospace;text-align:right;}
+  .score-total-row{font-weight:700;}
+  .score-summary{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;}
+  .score-pill{flex:1;min-width:140px;border-radius:10px;padding:14px 16px;}
+  .score-pill .sp-label{font-size:11.5px;color:var(--ink-soft);margin-bottom:4px;}
+  .score-pill .sp-val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;}
+  .score-pill.pro{background:rgba(63,120,115,0.10);}
+  .score-pill.con{background:rgba(176,86,59,0.10);}
+  .score-pill.final{background:rgba(27,42,74,0.08);}
+
+  /* ---------- report / gauge ---------- */
+  .report-grade{text-align:center;margin:6px 0 18px;}
+  .report-grade .grade-text{font-family:'Fraunces',serif;font-size:24px;font-weight:600;margin-top:6px;}
+  .report-grade .grade-text.recommend{color:var(--teal);}
+  .report-grade .grade-text.caution{color:#8a6a23;}
+  .report-grade .grade-text.reconsider{color:var(--rust);}
+  .report-grade .grade-sub{color:var(--ink-soft);font-size:12.5px;margin-top:2px;}
+
+  .reason-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px;}
+  @media (max-width:640px){.reason-cols{grid-template-columns:1fr;}}
+  .reason-box{border-radius:10px;padding:14px 16px;}
+  .reason-box.pro{background:rgba(63,120,115,0.08);border:1px solid rgba(63,120,115,0.25);}
+  .reason-box.con{background:rgba(176,86,59,0.08);border:1px solid rgba(176,86,59,0.25);}
+  .reason-box h4{font-size:13px;margin:0 0 8px;}
+  .reason-box.pro h4{color:var(--teal);}
+  .reason-box.con h4{color:var(--rust);}
+  .reason-box ul{margin:0;padding-left:18px;font-size:13px;line-height:1.7;}
+  .reason-box .empty-note{font-size:12.5px;color:var(--ink-soft);}
+
+  .viz-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:24px;align-items:start;margin-top:8px;}
+  @media (max-width:640px){.viz-grid{grid-template-columns:1fr;}}
+  .viz-card{border:1px solid var(--line);border-radius:12px;padding:18px;background:var(--surface-dim);}
+  .viz-card h4{font-size:13px;margin:0 0 12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.4px;}
+  .donut-legend{display:flex;gap:16px;justify-content:center;margin-top:10px;font-size:12px;}
+  .donut-legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .bar-row{margin-bottom:10px;}
+  .bar-row .bar-label{font-size:12px;color:var(--ink);margin-bottom:4px;display:flex;justify-content:space-between;}
+  .bar-track{height:8px;background:var(--line);border-radius:99px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--navy);border-radius:99px;}
+
+  /* ---------- nav buttons ---------- */
+  .wizard-nav{display:flex;justify-content:space-between;margin-top:24px;}
+  .wizard-nav .right-group{display:flex;gap:10px;}
+
+  footer.app-footer{text-align:center;color:var(--ink-soft);font-size:11.5px;padding:18px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============================================================
+   의사결정 나침반 — 단일 파일 웹앱
+   체험용 로그인: 실제 서버 인증 없이 브라우저 localStorage에 저장
+   ============================================================ */
+
+/* ---------- constants ---------- */
+const STORAGE_USERS = 'dc_users_v1';
+const STORAGE_SESSION = 'dc_session_v1';
+const worriesKey = (email) => 'dc_worries_v1_' + email;
+
+const CATEGORIES = ['인간관계', '경제', '건강', '학업', '진로', '기타'];
+
+const DEFAULT_ITEM_DEFS = [
+  { key: 'experience', label: '얻을 수 있는 경험' },
+  { key: 'time', label: '예상 소요 시간' },
+  { key: 'impact', label: '현재 일상에 미치는 영향' },
+  { key: 'reason', label: '고민의 이유' },
+];
+
+const STEP_LABELS = ['고민 생성', '문제 분해', '장단점 작성', '중요도/만족도 평가', '점수 계산', '리포트', '시각화'];
+
+/* ---------- helpers ---------- */
+function uid() { return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+function fmt1(n) { return (Math.round(n * 10) / 10).toFixed(1); }
+
+/* ---------- storage ---------- */
+function loadUsers() { try { return JSON.parse(localStorage.getItem(STORAGE_USERS) || '{}'); } catch (e) { return {}; } }
+function saveUsers(u) { localStorage.setItem(STORAGE_USERS, JSON.stringify(u)); }
+function getSession() { return localStorage.getItem(STORAGE_SESSION); }
+function setSession(email) { email ? localStorage.setItem(STORAGE_SESSION, email) : localStorage.removeItem(STORAGE_SESSION); }
+function loadWorries(email) { try { return JSON.parse(localStorage.getItem(worriesKey(email)) || '[]'); } catch (e) { return []; } }
+function saveWorries(email, arr) { localStorage.setItem(worriesKey(email), JSON.stringify(arr)); }
+
+/* ---------- app state ---------- */
+let state = {
+  page: 'list',       // 'list' | 'wizard' | 'report'
+  step: 1,
+  draft: null,
+  editingId: null,    // set when editing an existing worry
+  viewingId: null,    // set when viewing a saved report
+  authMode: 'login',  // 'login' | 'signup'
+  authError: '',
+};
+
+function freshDraft() {
+  return {
+    id: uid(),
+    title: '',
+    category: '',
+    customCategory: '',
+    createdAt: Date.now(),
+    items: DEFAULT_ITEM_DEFS.map(d => ({ id: d.key, label: d.label, isDefault: true, answer: '', importance: 3 })),
+    pros: [],
+    cons: [],
+    completed: false,
+  };
+}
+
+/* ---------- score calculation ---------- */
+function calcScores(worry) {
+  const proTotal = worry.pros.reduce((s, p) => s + (p.score * p.importance), 0);
+  const conTotal = worry.cons.reduce((s, c) => s + (c.score * c.importance), 0);
+  const final = proTotal - conTotal;
+  const denom = proTotal + conTotal;
+  const ratio = denom > 0 ? proTotal / denom : 0.5;
+  let grade, gradeKey;
+  if (ratio > 0.58) { grade = '추천'; gradeKey = 'recommend'; }
+  else if (ratio < 0.42) { grade = '재검토 추천'; gradeKey = 'reconsider'; }
+   else { grade = '신중 검토 추천'; gradeKey = 'caution'; } 
+  const topPros = [...worry.pros].sort((a, b) => (b.score * b.importance) - (a.score * a.importance)).slice(0, 3);
+  const topCons = [...worry.cons].sort((a, b) => (b.score * b.importance) - (a.score * a.importance)).slice(0, 3);
+  return { proTotal, conTotal, final, ratio, grade, gradeKey, topPros, topCons };
+}
+
+/* ---------- SVG visuals ---------- */
+function compassSVG(ratio) {
+  const cx = 120, cy = 128, r = 90, needleLen = 74;
+  const a = (clamp(ratio, 0, 1) - 0.5) * 180; // -90 left .. 90 right
+  const std = (90 - a) * Math.PI / 180;
+  const nx = cx + needleLen * Math.cos(std);
+  const ny = cy - needleLen * Math.sin(std);
+  return `
+  <svg viewBox="0 0 240 158" width="100%" style="max-width:280px;display:block;margin:0 auto;">
+    <path d="M 30 ${cy} A ${r} ${r} 0 0 1 210 ${cy}" fill="none" stroke="url(#gaugeGrad)" stroke-width="14" stroke-linecap="round"/>
+    <defs>
+      <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#B0563B"/>
+        <stop offset="50%" stop-color="#C49A45"/>
+        <stop offset="100%" stop-color="#3F7873"/>
+      </linearGradient>
+    </defs>
+    <line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="#1B2A4A" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="7" fill="#1B2A4A"/>
+    <text x="30" y="${cy + 22}" font-size="10.5" fill="#7A7568" font-family="Inter">재검토</text>
+    <text x="120" y="${cy + 22}" font-size="10.5" fill="#7A7568" font-family="Inter" text-anchor="middle">신중 검토</text>
+    <text x="210" y="${cy + 22}" font-size="10.5" fill="#7A7568" font-family="Inter" text-anchor="end">추천</text>
+  </svg>`;
+}
+
+function donutSVG(proTotal, conTotal) {
+  const r = 62, c = 2 * Math.PI * r;
+  const denom = proTotal + conTotal;
+  const proRatio = denom > 0 ? proTotal / denom : 0.5;
+  const proLen = proRatio * c;
+  return `
+  <svg viewBox="0 0 160 160" width="100%" style="max-width:180px;display:block;margin:0 auto;">
+    <circle cx="80" cy="80" r="${r}" fill="none" stroke="#E3DCC9" stroke-width="18"/>
+    <circle cx="80" cy="80" r="${r}" fill="none" stroke="#3F7873" stroke-width="18"
+      stroke-dasharray="${proLen.toFixed(1)} ${c.toFixed(1)}" stroke-dashoffset="0"
+      transform="rotate(-90 80 80)" stroke-linecap="round"/>
+    <circle cx="80" cy="80" r="${r}" fill="none" stroke="#B0563B" stroke-width="18"
+      stroke-dasharray="${(c - proLen).toFixed(1)} ${c.toFixed(1)}" stroke-dashoffset="${(-proLen).toFixed(1)}"
+      transform="rotate(-90 80 80)" stroke-linecap="round"/>
+    <text x="80" y="76" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" fill="#2B2A28" font-weight="600">${denom > 0 ? Math.round(proRatio * 100) : 50}%</text>
+    <text x="80" y="92" text-anchor="middle" font-family="Inter" font-size="9.5" fill="#7A7568">장점 비중</text>
+  </svg>`;
+}
+
+function barChartHTML(worry) {
+  const items = worry.items;
+  const max = Math.max(5, ...items.map(i => i.importance));
+  return items.map(it => `
+    <div class="bar-row">
+      <div class="bar-label"><span>${escapeHtml(it.label || '(이름 없음)')}</span><span class="mono">${it.importance}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(it.importance / max * 100).toFixed(0)}%"></div></div>
+    </div>`).join('');
+}
+
+function compassMark() {
+  return `<svg class="compass-mark" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="none" stroke="#C49A45" stroke-width="1.6"/><line x1="16" y1="16" x2="22" y2="10" stroke="#EFE9DA" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="16" x2="12" y2="22" stroke="#7F95B8" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="#EFE9DA"/></svg>`;
+}
+
+/* ---------- render: root ---------- */
+function render() {
+  const root = document.getElementById('app');
+  const session = getSession();
+  if (!session) { root.innerHTML = renderAuth(); return; }
+  root.innerHTML = renderShell(session);
+}
+
+/* ---------- render: auth ---------- */
+function renderAuth() {
+  const isLogin = state.authMode === 'login';
+  return `
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-brand">${compassMark().replace('#EFE9DA','#1B2A4A').replace('#7F95B8','#3F7873')}<h1>의사결정 나침반</h1></div>
+      <p class="auth-sub">흩어진 고민을 정리하고, 기준을 따라 점수로 비교해보세요.</p>
+      ${state.authError ? `<div class="auth-error">${escapeHtml(state.authError)}</div>` : ''}
+      <form id="authForm">
+        ${!isLogin ? `<div class="field"><label>이름</label><input type="text" id="f-name" placeholder="이름"></div>` : ''}
+        <div class="field"><label>이메일</label><input type="email" id="f-email" placeholder="you@example.com" required></div>
+        <div class="field"><label>비밀번호</label><input type="password" id="f-pw" placeholder="••••••••" required></div>
+        ${!isLogin ? `<div class="field"><label>비밀번호 확인</label><input type="password" id="f-pw2" placeholder="••••••••" required></div>` : ''}
+        <button type="submit" class="btn btn-primary btn-block">${isLogin ? '로그인' : '계정 생성'}</button>
+      </form>
+      <p style="text-align:center;margin-top:16px;font-size:13px;color:var(--ink-soft);">
+        ${isLogin ? '아직 계정이 없으신가요?' : '이미 계정이 있으신가요?'}
+        <button class="link-btn" onclick="toggleAuthMode()">${isLogin ? '회원가입' : '로그인'}</button>
+      </p>
+      <p style="text-align:center;margin-top:10px;font-size:11px;color:var(--ink-soft);">* 체험용 데모이며, 입력 정보는 이 브라우저에만 저장됩니다.</p>
+    </div>
+  </div>`;
+}
+
+function toggleAuthMode() {
+  state.authMode = state.authMode === 'login' ? 'signup' : 'login';
+  state.authError = '';
+  render();
+  bindAuthForm();
+}
+
+function bindAuthForm() {
+  const form = document.getElementById('authForm');
+  if (!form) return;
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('f-email').value.trim().toLowerCase();
+    const pw = document.getElementById('f-pw').value;
+    const users = loadUsers();
+    if (state.authMode === 'signup') {
+      const name = document.getElementById('f-name').value.trim();
+      const pw2 = document.getElementById('f-pw2').value;
+      if (!name || !email || !pw) { state.authError = '모든 항목을 입력해주세요.'; render(); bindAuthForm(); return; }
+      if (pw !== pw2) { state.authError = '비밀번호가 일치하지 않습니다.'; render(); bindAuthForm(); return; }
+      if (users[email]) { state.authError = '이미 가입된 이메일입니다.'; render(); bindAuthForm(); return; }
+      users[email] = { name, password: pw };
+      saveUsers(users);
+      setSession(email);
+      state.authError = '';
+      state.page = 'list';
+      render();
+    } else {
+      const u = users[email];
+      if (!u || u.password !== pw) { state.authError = '이메일 또는 비밀번호가 올바르지 않습니다.'; render(); bindAuthForm(); return; }
+      setSession(email);
+      state.authError = '';
+      state.page = 'list';
+      render();
+    }
+  });
+}
+
+/* ---------- render: shell ---------- */
+function renderShell(email) {
+  const users = loadUsers();
+  const name = (users[email] && users[email].name) || email;
+  let body = '';
+  if (state.page === 'list') body = renderList(email);
+  else if (state.page === 'wizard') body = renderWizard();
+  else if (state.page === 'report') body = renderReportPage(email);
+
+  return `
+    <div class="topbar">
+      <div class="brand" onclick="goList()">${compassMark()}<h1>의사결정 나침반</h1></div>
+      <div class="actions">
+        <span class="user-tag">${escapeHtml(name)}님</span>
+        <button class="btn btn-ghost btn-sm" onclick="logout()">로그아웃</button>
+      </div>
+    </div>
+    <main>${body}</main>
+    <footer class="app-footer">의사결정 나침반 · 체험용 데모 · 데이터는 이 브라우저에만 저장됩니다</footer>
+  `;
+}
+
+function logout() { setSession(null); state.page = 'list'; render(); bindAuthForm(); }
+function goList() { state.page = 'list'; state.editingId = null; state.viewingId = null; render(); }
+
+/* ---------- render: list ---------- */
+function renderList(email) {
+  const worries = loadWorries(email).slice().sort((a, b) => b.createdAt - a.createdAt);
+  const cards = worries.map(w => {
+    const completed = w.completed;
+    const s = completed ? calcScores(w) : null;
+    const badgeClass = !completed ? 'badge-draft' : (s.gradeKey === 'recommend' ? 'badge-recommend' : s.gradeKey === 'caution' ? 'badge-caution' : 'badge-reconsider');
+    const badgeText = !completed ? '작성 중' : s.grade;
+    const cat = w.category === '기타' ? (w.customCategory || '기타') : w.category;
+    return `
+    <div class="worry-card">
+      <span class="cat-pill">${escapeHtml(cat || '미분류')}</span>
+      <h3>${escapeHtml(w.title || '(제목 없음)')}</h3>
+      <span class="meta">${new Date(w.createdAt).toLocaleDateString('ko-KR')}</span>
+      <div class="grade-row">
+        <span class="badge ${badgeClass}">${escapeHtml(badgeText)}</span>
+        <div class="card-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editWorry('${w.id}')">${completed ? '수정' : '이어쓰기'}</button>
+          ${completed ? `<button class="btn btn-gold btn-sm" onclick="viewWorry('${w.id}')">보기</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="deleteWorry('${w.id}')">삭제</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="list-header">
+      <div>
+        <h2>내 고민 기록</h2>
+        <p>고민을 분해하고 점수로 비교해 결정을 내려보세요.</p>
+      </div>
+      <button class="btn btn-primary" onclick="startNewWorry()">+ 새 고민 만들기</button>
+    </div>
+    ${worries.length === 0 ? `
+      <div class="empty-state">
+        <h3>아직 기록된 고민이 없어요</h3>
+        <p>새 고민을 만들어 첫 의사결정 리포트를 받아보세요.</p>
+        <button class="btn btn-primary" style="margin-top:14px;" onclick="startNewWorry()">+ 새 고민 만들기</button>
+      </div>` : `<div class="worry-grid">${cards}</div>`}
+  `;
+}
+
+function startNewWorry() {
+  state.draft = freshDraft();
+  state.editingId = null;
+  state.step = 1;
+  state.page = 'wizard';
+  render();
+}
+
+function editWorry(id) {
+  const email = getSession();
+  const worries = loadWorries(email);
+  const w = worries.find(x => x.id === id);
+  if (!w) return;
+  state.draft = JSON.parse(JSON.stringify(w));
+  state.editingId = id;
+  state.step = 1;
+  state.page = 'wizard';
+  render();
+}
+
+function viewWorry(id) {
+  state.viewingId = id;
+  state.page = 'report';
+  render();
+}
+
+function deleteWorry(id) {
+  if (!confirm('이 고민 기록을 삭제할까요? 되돌릴 수 없습니다.')) return;
+  const email = getSession();
+  let worries = loadWorries(email);
+  worries = worries.filter(x => x.id !== id);
+  saveWorries(email, worries);
+  render();
+}
+
+/* ---------- render: report page (read-only, from saved list) ---------- */
+function renderReportPage(email) {
+  const worries = loadWorries(email);
+  const w = worries.find(x => x.id === state.viewingId);
+  if (!w) return `<div class="empty-state"><h3>기록을 찾을 수 없습니다</h3></div>`;
+  const s = calcScores(w);
+  return `
+    <button class="btn btn-ghost btn-sm" style="margin-bottom:18px;" onclick="goList()">← 목록으로</button>
+    <div class="panel" style="margin-bottom:18px;">
+      <h2>${escapeHtml(w.title)}</h2>
+      <p class="panel-sub">${escapeHtml(w.category === '기타' ? (w.customCategory || '기타') : w.category)} · ${new Date(w.createdAt).toLocaleDateString('ko-KR')}</p>
+      ${renderReportBody(w, s)}
+    </div>
+    <div class="panel">
+      <h2>결과 시각화</h2>
+      <p class="panel-sub">장단점 비율과 항목별 중요도를 그래프로 확인하세요.</p>
+      ${renderVizBody(w, s)}
+    </div>
+  `;
+}
+
+function renderReportBody(w, s) {
+  return `
+    <div class="report-grade">
+      ${compassSVG(s.ratio)}
+      <div class="grade-text ${s.gradeKey}">${s.grade}</div>
+      <div class="grade-sub">최종 점수 <span class="mono">${fmt1(s.final)}</span> &nbsp;(장점 ${fmt1(s.proTotal)} − 단점 ${fmt1(s.conTotal)})</div>
+    </div>
+    <div class="reason-cols">
+      <div class="reason-box pro">
+        <h4>추천 이유 — 가장 비중 높은 장점</h4>
+        ${s.topPros.length ? `<ul>${s.topPros.map(p => `<li>${escapeHtml(p.text || '(내용 없음)')}</li>`).join('')}</ul>` : `<p class="empty-note">등록된 장점이 없습니다.</p>`}
+      </div>
+      <div class="reason-box con">
+        <h4>유의할 점 — 가장 비중 높은 단점</h4>
+        ${s.topCons.length ? `<ul>${s.topCons.map(c => `<li>${escapeHtml(c.text || '(내용 없음)')}</li>`).join('')}</ul>` : `<p class="empty-note">등록된 단점이 없습니다.</p>`}
+      </div>
+    </div>
+  `;
+}
+
+function renderVizBody(w, s) {
+  return `
+    <div class="viz-grid">
+      <div class="viz-card">
+        <h4>장단점 점수 비율</h4>
+        ${donutSVG(s.proTotal, s.conTotal)}
+        <div class="donut-legend">
+          <span><span class="legend-dot" style="background:#3F7873;"></span>장점 ${fmt1(s.proTotal)}</span>
+          <span><span class="legend-dot" style="background:#B0563B;"></span>단점 ${fmt1(s.conTotal)}</span>
+        </div>
+      </div>
+      <div class="viz-card">
+        <h4>평가 항목별 중요도</h4>
+        ${barChartHTML(w)}
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- render: wizard ---------- */
+function renderWizard() {
+  const d = state.draft;
+  const dots = STEP_LABELS.map((label, i) => {
+    const n = i + 1;
+    const cls = n === state.step ? 'active' : n < state.step ? 'done' : '';
+    const connector = n < STEP_LABELS.length ? '<div class="step-connector"></div>' : '';
+    return `<div class="step-dot-wrap"><div class="step-dot ${cls}" title="${label}">${n}</div>${connector}</div>`;
+  }).join('');
+
+  let content = '';
+  if (state.step === 1) content = stepTitleCategory(d);
+  else if (state.step === 2) content = stepBreakdown(d);
+  else if (state.step === 3) content = stepProsCons(d);
+  else if (state.step === 4) content = stepEvaluate(d);
+  else if (state.step === 5) content = stepScoreCalc(d);
+  else if (state.step === 6) content = stepReport(d);
+  else if (state.step === 7) content = stepVisualize(d);
+
+  const isLast = state.step === STEP_LABELS.length;
+  return `
+    <div class="step-track">${dots}</div>
+    <div class="panel">${content}</div>
+    <div class="wizard-nav">
+      <div>${state.step > 1 ? `<button class="btn btn-ghost" onclick="goStep(${state.step - 1})">← 이전</button>` : `<button class="btn btn-ghost" onclick="goList()">취소</button>`}</div>
+      <div class="right-group">
+        ${!isLast ? `<button class="btn btn-primary" onclick="goStep(${state.step + 1})">다음 →</button>`
+                  : `<button class="btn btn-gold" onclick="saveDraft()">${state.editingId ? '수정 완료' : '저장하고 마치기'}</button>`}
+      </div>
+    </div>
+  `;
+}
+
+function goStep(n) {
+  if (n < 1 || n > STEP_LABELS.length) return;
+  if (n === 2 && !state.draft.title.trim()) { alert('고민 제목을 입력해주세요.'); return; }
+  state.step = n;
+  render();
+}
+
+function saveDraft() {
+  const email = getSession();
+  let worries = loadWorries(email);
+  state.draft.completed = true;
+  if (state.editingId) {
+    worries = worries.map(w => w.id === state.editingId ? state.draft : w);
+  } else {
+    worries.push(state.draft);
+  }
+  saveWorries(email, worries);
+  state.viewingId = state.draft.id;
+  state.page = 'report';
+  state.draft = null;
+  state.editingId = null;
+  render();
+}
+
+/* ---- step 1: title + category ---- */
+function stepTitleCategory(d) {
+  return `
+    <h2>1 · 고민 생성</h2>
+    <p class="panel-sub">지금 고민 중인 일을 짧은 제목으로 정리하고, 어떤 영역의 고민인지 골라주세요.</p>
+    <div class="field">
+      <label>고민 제목</label>
+      <input type="text" id="w-title" value="${escapeHtml(d.title)}" placeholder="예: 휴학하고 인턴을 할까?" onchange="updateField('title', this.value)">
+    </div>
+    <div class="field">
+      <label>카테고리</label>
+      <div class="chip-row">
+        ${CATEGORIES.map(c => `<button type="button" class="chip ${d.category === c ? 'selected' : ''}" onclick="selectCategory('${c}')">${c}</button>`).join('')}
+      </div>
+      ${d.category === '기타' ? `<input type="text" style="margin-top:8px;" value="${escapeHtml(d.customCategory)}" placeholder="카테고리 직접 입력" onchange="updateField('customCategory', this.value)">` : ''}
+    </div>
+  `;
+}
+function updateField(key, val) { state.draft[key] = val; }
+function selectCategory(c) { state.draft.category = c; render(); }
+
+/* ---- step 2: breakdown ---- */
+function stepBreakdown(d) {
+  return `
+    <h2>2 · 카테고리별 문제 분해</h2>
+    <p class="panel-sub">기본 평가 항목에 답하고, 필요하다면 항목을 직접 추가해보세요.</p>
+    ${d.items.map((it, i) => `
+      <div class="item-block">
+        <div class="item-head">
+          ${it.isDefault
+            ? `<span style="font-weight:600;font-size:14px;">${escapeHtml(it.label)}</span>`
+            : `<input class="item-name" value="${escapeHtml(it.label)}" placeholder="항목 이름" onchange="updateItemLabel(${i}, this.value)">`}
+          ${!it.isDefault ? `<button class="remove-x" onclick="removeItem(${i})">✕</button>` : ''}
+        </div>
+        <textarea placeholder="답변을 작성해주세요" onchange="updateItemAnswer(${i}, this.value)">${escapeHtml(it.answer)}</textarea>
+      </div>
+    `).join('')}
+    <button class="btn btn-ghost btn-sm" onclick="addItem()">+ 항목 추가</button>
+  `;
+}
+function updateItemLabel(i, val) { state.draft.items[i].label = val; }
+function updateItemAnswer(i, val) { state.draft.items[i].answer = val; }
+function addItem() { state.draft.items.push({ id: uid(), label: '', isDefault: false, answer: '', importance: 3 }); render(); }
+function removeItem(i) { state.draft.items.splice(i, 1); render(); }
+
+/* ---- step 3: pros & cons ---- */
+function stepProsCons(d) {
+  const row = (item, idx, type) => `
+    <div class="pc-item">
+      <div class="pc-row">
+        <input class="pc-text" value="${escapeHtml(item.text)}" placeholder="${type === 'pros' ? '장점을 입력하세요' : '단점을 입력하세요'}" onchange="updatePcText('${type}', ${idx}, this.value)">
+        <button class="remove-x" onclick="removePc('${type}', ${idx})">✕</button>
+      </div>
+    </div>`;
+  return `
+    <h2>3 · 장단점 작성</h2>
+    <p class="panel-sub">이 선택의 장점과 단점을 떠오르는 대로 적어보세요.</p>
+    <div class="pc-cols">
+      <div class="pc-col pros">
+        <h3>장점</h3>
+        ${d.pros.map((p, i) => row(p, i, 'pros')).join('')}
+        <div class="add-row"><button class="btn btn-ghost btn-sm" onclick="addPc('pros')">+ 장점 추가</button></div>
+      </div>
+      <div class="pc-col cons">
+        <h3>단점</h3>
+        ${d.cons.map((c, i) => row(c, i, 'cons')).join('')}
+        <div class="add-row"><button class="btn btn-ghost btn-sm" onclick="addPc('cons')">+ 단점 추가</button></div>
+      </div>
+    </div>
+  `;
+}
+function addPc(type) { state.draft[type].push({ id: uid(), text: '', score: 3, importance: 3 }); render(); }
+function removePc(type, i) { state.draft[type].splice(i, 1); render(); }
+function updatePcText(type, i, val) { state.draft[type][i].text = val; }
+
+/* ---- step 4: evaluation (importance / satisfaction / burden) ---- */
+function sliderRow(label, val, onInputFn) {
+  const sid = uid();
+  return `
+    <div class="slider-row">
+      <div class="sr-top"><span class="sr-label">${label}</span><span class="sr-val mono" id="${sid}-val">${val}</span></div>
+      <input type="range" min="1" max="5" step="1" value="${val}" oninput="${onInputFn}; document.getElementById('${sid}-val').textContent=this.value;">
+    </div>`;
+}
+function stepEvaluate(d) {
+  return `
+     <h2>4 · 중요도 및 만족도/부담도 평가</h2> 
+    <p class="panel-sub">각 평가 항목의 중요도, 그리고 장단점별 만족도·부담도와 그 중요도를 1~5점으로 매겨주세요.</p>
+
+    <div class="eval-group">
+       <div class="eval-group-title">평가 항목 중요도</div> 
+      ${d.items.map((it, i) => sliderRow(escapeHtml(it.label || '(이름 없음)'), it.importance, `setItemImportance(${i}, this.value)`)).join('')}
+    </div>
+
+    <div class="eval-group">
+           <div class="eval-group-title">장점 — 만족도 / 중요도</div>     
+       ${d.pros.length === 0 ? `<p class="empty-note" style="color:var(--ink-soft);font-size:13px;">등록된 장점이 없습니다.</p>` : d.pros.map((p, i) => ` 
+        <div style="margin-bottom:14px;">
+           <div style="font-size:13px;font-weight:600;margin-bottom:6px;">${escapeHtml(p.text || '(내용 없음)')}</div> 
+          ${sliderRow('만족도', p.score, `setPcVal('pros', ${i}, 'score', this.value)`)}
+          ${sliderRow('중요도', p.importance, `setPcVal('pros', ${i}, 'importance', this.value)`)}
+        </div>`).join('')}
+    </div>
+
+    <div class="eval-group">
+           <div class="eval-group-title">단점 — 부담도 / 중요도</div>     
+          ${d.cons.length === 0 ? `<p class="empty-note" style="color:var(--ink-soft);font-size:13px;">등록된 단점이 없습니다.</p>` : d.cons.map((c, i) => `    
+        <div style="margin-bottom:14px;">
+             <div style="font-size:13px;font-weight:600;margin-bottom:6px;">${escapeHtml(c.text || '(내용 없음)')}</div>   
+          ${sliderRow('부담도', c.score, `setPcVal('cons', ${i}, 'score', this.value)`)}
+          ${sliderRow('중요도', c.importance, `setPcVal('cons', ${i}, 'importance', this.value)`)}
+        </div>`).join('')}
+    </div>
+  `;
+}
+function setItemImportance(i, val) { state.draft.items[i].importance = parseInt(val, 10); }
+function setPcVal(type, i, field, val) { state.draft[type][i][field] = parseInt(val, 10); }
+
+/* ---- step 5: score calc ---- */
+function stepScoreCalc(d) {
+  const s = calcScores(d);
+  const rows = (arr, label) => arr.map(x => `
+    <tr><td>${escapeHtml(x.text || '(내용 없음)')}</td><td class="num">${x.score}</td><td class="num">${x.importance}</td><td class="num">${fmt1(x.score * x.importance)}</td></tr>
+  `).join('');
+  return `
+       <h2>5 · 점수 계산</h2>   
+       <p class="panel-sub">앞서 입력한 만족도·부담도와 중요도를 곱해 자동으로 계산됩니다.</p>   
+    <table class="score-table">
+         <thead><tr><th>장점</th><th>만족도</th><th>중요도</th><th>점수</th></tr></thead>   
+         <tbody>${d.pros.length ? rows(d.pros, '장점') : `<tr><td colspan="4" style="color:var(--ink-soft);">등록된 장점이 없습니다.</td></tr>`}</tbody>   
+    </table>
+    <table class="score-table">
+         <thead><tr><th>단점</th><th>부담도</th><th>중요도</th><th>점수</th></tr></thead>   
+         <tbody>${d.cons.length ? rows(d.cons, '단점') : `<tr><td colspan="4" style="color:var(--ink-soft);">등록된 단점이 없습니다.</td></tr>`}</tbody>   
+   </테이블>   
+ <div class="score-summary"> 
+         <div class="score-pill pro"><div class="sp-label">장점 총점</div><div class="sp-val">${fmt1(s.proTotal)}</div></div>   
+         <div class="score-pill con"><div class="sp-label">단점 총점</div><div class="sp-val">${fmt1(s.conTotal)}</div></div>   
+         <div class="score-pill final"><div class="sp-label">최종 점수 (장점 − 단점)</div><div class="sp-val">${fmt1(s.final)}</div></div>   
+ </div> 
+   `; 
+}
+
+/* ---- 6단계: 보고서 ---- */
+함수 stepReport(d) {
+ const s = calcScores(d); 
+    반환.    
+        <h2>6 · 의사결정 리포트</h2>    
+        <p class="panel-sub">계산된 점수를 바탕으로 한 종합 결과입니다.</p>    
+ ${renderReportBody(d, s)} 
+   `; 
+}
+
+/* ---- 7단계: 시각화 ---- */
+함수 stepVisualize(d) {
+ const s = calcScores(d); 
+    반환.    
+        <h2>7 · 결과 시각화</h2>    
+        <p class="panel-sub">장단점 비율과 항목별 중요도를 그래프로 한눈에 확인하세요.</p>    
+ ${renderVizBody(d, s)} 
+   `; 
+}
+
+/* ------ init ------ */
+렌더링();
+bindAuthForm();
+</script>
+</몸>
+</html>
+```
